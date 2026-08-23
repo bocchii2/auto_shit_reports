@@ -1,0 +1,27 @@
+No.,Actividad,Cliente / Proyecto / Servicio / Aplicación,Fecha desde,Fecha Hasta,Descripción,Estatus *
+1,Proceso Permisos EMAIMEP,EMAIMEP,2/7/2026,2/7/2026,Revisión y arreglo del permiso de Hija(s) o hijo(s) hospitalizados o con patologías degenerativas y de notificaciones,Entregado
+2,Reportes de proceso de permisos EMAIMEP,EMAIMEP,3/7/2026,3/7/2026,Creación de reporte de condensado de permisos para el proceso de permisos de EMAIMEP,Entregado
+3,Reunión I+D Builders Technical,Altura,6/7/2026,6/7/2026,Reunión técnica para explicación de funcionalidades de AFlow y AReports,Entregado
+4,Proceso Permisos EMAIMEP,EMAIMEP,6/7/2026,7/7/2026,Modificación de fechas de permisos para trámites necesarios para la certificación del proceso,Entregado
+5,Administrador AThi,Altura,7/7/2026,9/7/2026,Configuración de entidades de Esquema de marcaciones en Dashboard AThi y tabla de marcaciones en perfil del empleado,Entregado
+6,Reunión I+D Builders,Altura,9/7/2026,9/7/2026,Reunión de equipo I+D Builders para planificación y coordinación de actividades,Entregado
+7,Administrador AThi,Altura,10/7/2026,15/7/2026,Correcciones en mapeos de entidades Jornada y Horario; servicios de consulta de horarios y calendario de marcaciones,Entregado
+8,Reunión I+D Builders Technical,Altura,13/7/2026,13/7/2026,Reunión técnica para explicación de creación de gráficos en AReports,Entregado
+9,Reunión I+D Builders,Altura,16/7/2026,16/7/2026,Reunión de planificación y coordinación de actividades del equipo I+D,Entregado
+10,Administrador AThi,Altura,16/7/2026,17/7/2026,Mejoras en la UI de la vista de perfil de usuario y arreglo del calendario de marcaciones,Entregado
+11,Reunión I+D Builders Technical,Altura,20/7/2026,20/7/2026,Reunión técnica sobre interoperabilidad de AReports a AFlow,Entregado
+12,Administrador AThi,Altura,22/7/2026,22/7/2026,Reunión con Johan Manrique para explicación de uso de librería ASteps en AThi,Entregado
+13,Reunión I+D Builders,Altura,23/7/2026,23/7/2026,Reunión de equipo de trabajo I+D Builders para planificación de actividades,Entregado
+14,Administrador AThi,Altura,24/7/2026,24/7/2026,Presentación de aplicación Dashboard AThi al Ing. Patricio para validación de primera solicitud,Entregado
+15,Administrador AThi,Altura,27/7/2026,27/7/2026,Reunión con Danny Espinoza para creación de archivos Docker necesarios para la imagen,Entregado
+16,Reunión Ing Fabian,TPM,28/7/2026,28/7/2026,Coordinación de elementos complementarios del proceso de debida diligencia para TPM,Entregado
+17,Administrador AThi,Altura,28/7/2026,29/7/2026,Ajustes en consultas del backend del proyecto y aplicación parcial del uso de ASteps,Entregado
+18,Administrador AThi,Altura,30/7/2026,30/7/2026,Creación de imagen Docker con docker-compose Dockerfile y entrypoint,Entregado
+19,Administrador AThi,Altura,31/7/2026,31/7/2026,Ajustes previos al despliegue y pruebas locales de la imagen Docker,Entregado
+20,Soporte Gestor de Tareas AppSheet,Altura,5/8/2026,5/8/2026,Revisión de flujos del gestor de tareas y apoyo en carga de actividades del equipo,Entregado
+21,Documentación informes mensuales,Altura,10/8/2026,12/8/2026,Preparación de plantillas Word/Excel y flujo de generación de informes de actividades,Entregado
+22,Administrador AThi,Altura,13/8/2026,15/8/2026,Correcciones post-despliegue en ambiente de pruebas y validación de marcaciones,En progreso
+23,Reunión I+D Builders,Altura,18/8/2026,18/8/2026,Reunión de seguimiento de avances del sprint y asignación de tareas,Entregado
+24,Soporte proceso EMAIMEP,EMAIMEP,20/8/2026,21/8/2026,Ajustes menores en reportes de permisos y validación de casos reportados por el cliente,En progreso
+25,Capacitación interna AReports,Altura,3/6/2026,3/6/2026,Sesión de inducción sobre módulos de reportes y buenas prácticas del equipo,Entregado
+26,Setup entorno desarrollo AThi,Altura,10/6/2026,12/6/2026,Configuración inicial del repositorio entorno local y dependencias del proyecto Dashboard AThi,Entregado

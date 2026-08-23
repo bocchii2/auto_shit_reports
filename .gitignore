@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+*.manifest
+*.spec.bak
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# PyInstaller
+*.pyo
+warn-*.txt
+pyinstaller-*.log
+
+# Local app data (SQLite + generated reports)
+data/app.db
+data/app.db-*
+data/exports/*
+!data/exports/.gitkeep
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Test / debug leftovers
+chk*.txt
+clean*.txt
+err*.txt
+out*.txt
+pv.txt
+se.txt
+so.txt
+n3b
+
+# Coverage / tooling
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.cache/
+
+# Command Code (local AI tooling)
+.commandcode/
