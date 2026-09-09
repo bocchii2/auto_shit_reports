@@ -283,6 +283,66 @@ def list_batches() -> list[dict[str, Any]]:
         return [dict(r) for r in rows]
 
 
+def delete_import_batch(batch_id: int) -> None:
+    with _connect() as conn:
+        cur = conn.execute("DELETE FROM import_batches WHERE id = ?", (batch_id,))
+        if cur.rowcount == 0:
+            raise ValueError("Lote de importación no encontrado")
+        conn.commit()
+
+
+def update_activity_text(
+    activity_id: int,
+    *,
+    actividad: str,
+    cliente_proyecto: str,
+    descripcion: str,
+    estatus: str,
+) -> None:
+    actividad = actividad.strip()
+    if not actividad:
+        raise ValueError("La actividad no puede quedar vacía")
+
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM activities WHERE id = ?", (activity_id,)
+        ).fetchone()
+        if not row:
+            raise ValueError("Actividad no encontrada")
+
+        raw = dict(row)
+        raw.update(
+            {
+                "actividad": actividad,
+                "cliente_proyecto": cliente_proyecto,
+                "descripcion": descripcion,
+                "estatus": estatus,
+            }
+        )
+        search = " ".join(
+            str(raw.get(k) or "")
+            for k in ("actividad", "cliente_proyecto", "descripcion", "estatus")
+        ).lower()
+        conn.execute(
+            """
+            UPDATE activities
+            SET actividad = ?, cliente_proyecto = ?, descripcion = ?, estatus = ?,
+                raw_json = ?, search_text = ?
+            WHERE id = ?
+            """,
+            (
+                actividad,
+                cliente_proyecto,
+                descripcion,
+                estatus,
+                json.dumps(raw, ensure_ascii=False),
+                search,
+                activity_id,
+            ),
+        )
+        conn.commit()
+
+
 def get_activities(batch_id: int | None = None) -> list[dict[str, Any]]:
     with _connect() as conn:
         if batch_id is None:

@@ -12,7 +12,7 @@ dateutil.parser.parse(dayfirst=True, fuzzy=True), que es ambiguo para fechas tip
 
 Uso:
     python scripts/extract_athi_historial.py
-    python scripts/extract_athi_historial.py --source /ruta/AThi4.historial.txt --output out.csv
+    python scripts/extract_athi_historial.py --source /ruta/AThi4.historial.txt --output out.csv --actividad-desc "Administrador AThi"
 """
 from __future__ import annotations
 
@@ -45,7 +45,6 @@ CSV_HEADER = [
 HEADER_RE = re.compile(
     r"^(?P<date>\d{2}/\d{2}/\d{4})\s+(?P<author>.*?)(?:\s+(?P<time>\d{1,2}:\d{2}:\d{2}))?$"
 )
-ITEM_RE = re.compile(r"^\s*(?P<num>\d+)\.\s*(?P<text>.+?)\s*$")
 MSG_DATE_RE = re.compile(r"^(\d{2}/\d{2}/\d{4})")
 KNOWN_AUTHOR_EMAILS = {"jostin.cedeno@altura.com.ec", "jostin9876@gmail.com"}
 
@@ -90,20 +89,15 @@ def parse_historial(path: Path) -> list[HistorialBlock]:
             print(f"Aviso: fecha inválida en encabezado: {lines[0]!r}")
             continue
 
-        items: list[str] = []
-        for line in lines[1:]:
-            if not line.strip():
-                continue
-            item_match = ITEM_RE.match(line)
-            if item_match:
-                items.append(item_match["text"])
-            elif items:
-                items[-1] = f"{items[-1]} {line.strip()}"
-            else:
-                print(f"Aviso: línea sin ítem previo, ignorada: {line!r}")
-
-        if items:
-            blocks.append(HistorialBlock(fecha=fecha, author_raw=header_match["author"], items=items))
+        activity_lines = [line.strip() for line in lines[1:] if line.strip()]
+        if activity_lines:
+            blocks.append(
+                HistorialBlock(
+                    fecha=fecha,
+                    author_raw=header_match["author"],
+                    items=[" ".join(activity_lines)],
+                )
+            )
 
     return blocks
 
@@ -148,17 +142,20 @@ def split_actividad(text: str, max_len: int = 90) -> tuple[str, str]:
     return text[:max_len].strip(), descripcion
 
 
-def build_rows(blocks: list[HistorialBlock], cliente: str, estatus: str) -> list[ActivityRow]:
-    pairs = [(block.fecha, item) for block in blocks for item in block.items]
-    pairs.sort(key=lambda p: p[0])
+def build_rows(
+    blocks: list[HistorialBlock], cliente: str, estatus: str, actividad_desc: str
+) -> list[ActivityRow]:
+    blocks = sorted(blocks, key=lambda block: block.fecha)
 
     rows: list[ActivityRow] = []
-    for numero, (fecha, item_text) in enumerate(pairs, start=1):
-        actividad, descripcion = split_actividad(item_text)
+    for numero, block in enumerate(blocks, start=1):
+        fecha = block.fecha
+        item_text = block.items[0]
+        _, descripcion = split_actividad(item_text)
         rows.append(
             ActivityRow(
                 numero=numero,
-                actividad=actividad,
+                actividad=actividad_desc,
                 cliente=cliente,
                 fecha_desde=fecha.isoformat(),
                 fecha_hasta=fecha.isoformat(),
@@ -297,6 +294,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--cliente", default="Altura")
+    parser.add_argument("--actividad-desc", default="Administrador AThi")
     parser.add_argument("--estatus", default="Entregado")
     parser.add_argument("--tolerance-days", type=int, default=5)
     parser.add_argument("--no-crosscheck", action="store_true")
@@ -312,7 +310,7 @@ def main() -> None:
     kept, dropped = dedup_blocks(blocks)
     print(f"Bloques únicos: {len(kept)} (descartados: {len(dropped)})")
 
-    rows = build_rows(kept, args.cliente, args.estatus)
+    rows = build_rows(kept, args.cliente, args.estatus, args.actividad_desc)
     write_csv(rows, args.output)
     print(f"Escritas {len(rows)} filas en {args.output}")
 

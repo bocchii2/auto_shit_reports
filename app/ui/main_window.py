@@ -24,6 +24,7 @@ from app.services.report_code import (
 )
 from app.paths import exports_dir, templates_dir
 from app.services.word_generator import generate_word
+from app.services.odt_generator import convert_docx_to_odt
 
 TEMPLATES = templates_dir()
 EXPORTS = exports_dir()
@@ -66,6 +67,7 @@ class App(ctk.CTk):
         self.var_equipo = tk.StringVar(value="IDS")
         self.var_ciudad = tk.StringVar(value="Manta")
         self.var_codigo = tk.StringVar()
+        self.var_export_format = tk.StringVar(value="DOCX")
         self.var_status = tk.StringVar(value="Listo. Importa un CSV para comenzar.")
 
         self._build_ui()
@@ -97,7 +99,7 @@ class App(ctk.CTk):
 
         top = ctk.CTkFrame(parent)
         top.grid(row=0, column=0, sticky="ew", padx=8, pady=8)
-        top.grid_columnconfigure(6, weight=1)
+        top.grid_columnconfigure(8, weight=1)
 
         ctk.CTkButton(top, text="Importar CSV", command=self._import_csv, width=140).grid(
             row=0, column=0, padx=4, pady=4
@@ -105,8 +107,19 @@ class App(ctk.CTk):
         ctk.CTkButton(top, text="Recargar batch", command=self._load_latest_batch, width=130).grid(
             row=0, column=1, padx=4, pady=4
         )
+        ctk.CTkButton(top, text="Editar seleccionada", command=self._edit_selected_activity, width=145).grid(
+            row=0, column=2, padx=4, pady=4
+        )
+        ctk.CTkButton(
+            top,
+            text="Limpiar importación",
+            command=self._clear_import_batch,
+            width=145,
+            fg_color="#8B3A3A",
+            hover_color="#6E2E2E",
+        ).grid(row=0, column=3, padx=4, pady=4)
 
-        ctk.CTkLabel(top, text="Mes").grid(row=0, column=2, padx=(16, 4))
+        ctk.CTkLabel(top, text="Mes").grid(row=0, column=4, padx=(16, 4))
         mes_values = [f"{i:02d} - {n}" for i, n in MESES]
         self.cmb_mes = ctk.CTkComboBox(
             top,
@@ -115,9 +128,9 @@ class App(ctk.CTk):
             command=lambda _v: self._on_period_change(),
         )
         self.cmb_mes.set(f"{self.var_mes.get():02d} - {MES_NOMBRE_TITLE[self.var_mes.get()]}")
-        self.cmb_mes.grid(row=0, column=3, padx=4)
+        self.cmb_mes.grid(row=0, column=5, padx=4)
 
-        ctk.CTkLabel(top, text="Año").grid(row=0, column=4, padx=(12, 4))
+        ctk.CTkLabel(top, text="Año").grid(row=0, column=6, padx=(12, 4))
         years = [str(y) for y in range(date.today().year - 3, date.today().year + 2)]
         self.cmb_anio = ctk.CTkComboBox(
             top,
@@ -126,7 +139,7 @@ class App(ctk.CTk):
             command=lambda _v: self._on_period_change(),
         )
         self.cmb_anio.set(str(self.var_anio.get()))
-        self.cmb_anio.grid(row=0, column=5, padx=4)
+        self.cmb_anio.grid(row=0, column=7, padx=4)
 
         filt = ctk.CTkFrame(parent)
         filt.grid(row=1, column=0, sticky="ew", padx=8, pady=(0, 8))
@@ -186,6 +199,8 @@ class App(ctk.CTk):
         hsb = ttk.Scrollbar(table_frame, orient="horizontal", command=self.tree.xview)
         self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
         self.tree.grid(row=0, column=0, sticky="nsew")
+        self.tree.bind("<Double-1>", self._edit_activity_from_event)
+        self.tree.bind("<F2>", lambda _event: self._edit_selected_activity())
         vsb.grid(row=0, column=1, sticky="ns")
         hsb.grid(row=1, column=0, sticky="ew")
 
@@ -267,10 +282,20 @@ class App(ctk.CTk):
         self.lbl_preview = ctk.CTkLabel(right, text="", justify="left", anchor="w")
         self.lbl_preview.pack(fill="x", padx=12, pady=8)
 
+        format_frame = ctk.CTkFrame(right, fg_color="transparent")
+        format_frame.pack(fill="x", padx=12, pady=4)
+        ctk.CTkLabel(format_frame, text="Formato del informe").pack(side="left", padx=(0, 8))
+        ctk.CTkComboBox(
+            format_frame,
+            variable=self.var_export_format,
+            values=["DOCX", "ODT"],
+            width=100,
+        ).pack(side="left")
+
         ctk.CTkButton(
-            right, text="Generar Word + Excel", height=40, command=self._generate_both
+            right, text="Generar Informe + Excel", height=40, command=self._generate_both
         ).pack(fill="x", padx=12, pady=6)
-        ctk.CTkButton(right, text="Solo Word (.docx)", command=lambda: self._generate(word=True, excel=False)).pack(
+        ctk.CTkButton(right, text="Solo informe", command=lambda: self._generate(word=True, excel=False)).pack(
             fill="x", padx=12, pady=4
         )
         ctk.CTkButton(right, text="Solo Excel (.xlsx)", command=lambda: self._generate(word=False, excel=True)).pack(
@@ -575,6 +600,94 @@ class App(ctk.CTk):
             messagebox.showerror("Error al importar", str(exc))
             self._set_status(f"Error: {exc}")
 
+    def _clear_import_batch(self) -> None:
+        if self.current_batch_id is None:
+            messagebox.showinfo("Limpiar importación", "No hay una importación cargada.")
+            return
+        if not messagebox.askyesno(
+            "Confirmar limpieza",
+            "¿Eliminar todas las actividades de la importación actual?",
+        ):
+            return
+        try:
+            storage.delete_import_batch(self.current_batch_id)
+            self.current_batch_id = None
+            self.all_rows = []
+            self.filtered_rows = []
+            self._refresh_table()
+            self._update_preview()
+            self._set_status("Importación eliminada.")
+        except Exception as exc:  # noqa: BLE001
+            messagebox.showerror("Error al limpiar", str(exc))
+
+    def _edit_activity_from_event(self, event: tk.Event) -> str:
+        item_id = self.tree.identify_row(event.y)
+        if item_id:
+            self.tree.selection_set(item_id)
+            self._edit_selected_activity()
+        return "break"
+
+    def _edit_selected_activity(self) -> None:
+        selected = self.tree.selection()
+        if len(selected) != 1:
+            messagebox.showinfo("Editar actividad", "Selecciona una sola actividad.")
+            return
+        row_id = int(selected[0])
+        row = next((item for item in self.all_rows if int(item.get("id", 0)) == row_id), None)
+        if row is None:
+            messagebox.showerror("Editar actividad", "No se encontró la actividad seleccionada.")
+            return
+
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("Editar actividad")
+        dialog.geometry("560x430")
+        dialog.transient(self)
+        dialog.grab_set()
+        dialog.grid_columnconfigure(1, weight=1)
+        dialog.grid_rowconfigure(3, weight=1)
+
+        values = {
+            "Actividad": tk.StringVar(value=str(row.get("actividad") or "")),
+            "Cliente / Proyecto": tk.StringVar(value=str(row.get("cliente_proyecto") or "")),
+            "Estatus": tk.StringVar(value=str(row.get("estatus") or "")),
+        }
+        for index, (label, variable) in enumerate(values.items()):
+            ctk.CTkLabel(dialog, text=label).grid(row=index, column=0, sticky="w", padx=12, pady=8)
+            ctk.CTkEntry(dialog, textvariable=variable).grid(
+                row=index, column=1, sticky="ew", padx=12, pady=8
+            )
+
+        ctk.CTkLabel(dialog, text="Descripción").grid(row=3, column=0, sticky="nw", padx=12, pady=8)
+        description = ctk.CTkTextbox(dialog, height=130)
+        description.grid(row=3, column=1, sticky="nsew", padx=12, pady=8)
+        description.insert("1.0", str(row.get("descripcion") or ""))
+
+        buttons = ctk.CTkFrame(dialog, fg_color="transparent")
+        buttons.grid(row=4, column=0, columnspan=2, pady=12)
+
+        def save() -> None:
+            try:
+                storage.update_activity_text(
+                    row_id,
+                    actividad=values["Actividad"].get(),
+                    cliente_proyecto=values["Cliente / Proyecto"].get().strip(),
+                    descripcion=description.get("1.0", "end").strip(),
+                    estatus=values["Estatus"].get().strip() or "Entregado",
+                )
+                self.all_rows = storage.get_activities(self.current_batch_id)
+                self._apply_filters()
+                self._set_status("Actividad actualizada.")
+                dialog.destroy()
+            except Exception as exc:  # noqa: BLE001
+                messagebox.showerror("Error al guardar", str(exc), parent=dialog)
+
+        ctk.CTkButton(buttons, text="Guardar", command=save, width=110).pack(side="left", padx=5)
+        ctk.CTkButton(buttons, text="Cancelar", command=dialog.destroy, width=110).pack(
+            side="left", padx=5
+        )
+        dialog.protocol("WM_DELETE_WINDOW", dialog.destroy)
+        dialog.focus_force()
+
     def _load_latest_batch(self) -> None:
         batches = storage.list_batches()
         if not batches:
@@ -676,18 +789,33 @@ class App(ctk.CTk):
 
         path_docx = None
         path_xlsx = None
+        temporary_docx = None
         templates = templates_dir()
         try:
             if word:
                 tpl = templates / "informe.docx"
                 if not tpl.exists():
                     raise FileNotFoundError(f"Falta plantilla Word: {tpl}")
-                path_docx = generate_word(
-                    tpl,
-                    out_dir / f"{codigo}.docx",
-                    header=header,
-                    activities=self.filtered_rows,
-                )
+                if self.var_export_format.get() == "ODT":
+                    temporary_docx = out_dir / f"{codigo}_conversion.docx"
+                    generate_word(
+                        tpl,
+                        temporary_docx,
+                        header=header,
+                        activities=self.filtered_rows,
+                    )
+                    path_docx = convert_docx_to_odt(
+                        temporary_docx,
+                        out_dir / f"{codigo}.odt",
+                    )
+                    temporary_docx.unlink(missing_ok=True)
+                else:
+                    path_docx = generate_word(
+                        tpl,
+                        out_dir / f"{codigo}.docx",
+                        header=header,
+                        activities=self.filtered_rows,
+                    )
             if excel:
                 tpl = templates / "matriz.xlsx"
                 if not tpl.exists():
@@ -732,10 +860,12 @@ class App(ctk.CTk):
             messagebox.showinfo(
                 "Listo",
                 f"Informe generado:\n{out_dir}\n\n"
-                + (f"Word: {path_docx.name}\n" if path_docx else "")
+                + (f"Informe: {path_docx.name}\n" if path_docx else "")
                 + (f"Excel: {path_xlsx.name}" if path_xlsx else ""),
             )
         except Exception as exc:  # noqa: BLE001
+            if temporary_docx:
+                temporary_docx.unlink(missing_ok=True)
             messagebox.showerror("Error al generar", str(exc))
             self._set_status(f"Error al generar: {exc}")
 

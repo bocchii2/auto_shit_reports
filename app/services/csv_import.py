@@ -145,4 +145,5 @@ def load_csv(path: str | Path) -> tuple[list[dict[str, Any]], list[str]]:
     if not rows:
         raise ValueError("El CSV no contiene filas de actividad válidas")
 
+    rows.sort(key=lambda row: (not row["fecha_desde"], row["fecha_desde"]))
     return rows, warnings
